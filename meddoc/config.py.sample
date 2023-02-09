@@ -1,0 +1,9 @@
+from aiogram.dispatcher.filters.builtin import IDFilter
+
+BOT_TOKEN = "1234567890:ABCDEFabcdef1234567890abcdefABCDEFabc"
+ADMINS = [
+    123456789,
+    987654321,
+]
+
+ADMIN_FILTER = IDFilter(ADMINS)

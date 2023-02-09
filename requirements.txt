@@ -1,0 +1,4 @@
+pygsheets==2.0.5
+python-docx==0.8.11
+docxtpl==0.16.4
+openpyxl==3.0.10
