@@ -34,7 +34,6 @@ async def set_state(
     data: Union[dict, str, int, list],
     key: Optional[str] = None,
 ) -> None:
-    global fsm
     if isinstance(user, (types.Message, types.CallbackQuery)):
         user = user.from_user.id
 
@@ -52,7 +51,7 @@ async def set_state(
         fsm[str(user)] = data
 
     async with aopen("fsm.json", "w", encoding="utf-8") as f:
-        await f.write(json.dumps({key: value for key, value in fsm.items() if value}))
+        json.dump({key: value for key, value in fsm.items() if value}, f)
 
 
 gs = get_state
