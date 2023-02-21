@@ -21,7 +21,7 @@ def find_user(
     :return: List of users
     :rtype: typing.List[User]
     """
-    wb = load_workbook(os.path.join(os.path.dirname(__file__), "database.xlsx"))
+    wb = load_workbook("/mnt/data/database.xlsx")
 
     return [
         User.from_row(row)

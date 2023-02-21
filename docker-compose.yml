@@ -1,0 +1,12 @@
+version: "3"
+services:
+    meddoc-bot:
+        container_name: meddoc-bot
+        build: ./
+        environment:
+            BOT_TOKEN: $BOT_TOKEN
+        volumes:
+            - meddoc-database:/mnt/data
+
+volumes:
+    meddoc-database:

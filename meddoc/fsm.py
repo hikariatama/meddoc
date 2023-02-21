@@ -8,11 +8,8 @@ from aiogram import types
 
 logger = logging.getLogger(__name__)
 
-os.chdir(os.path.dirname(os.path.abspath(__file__)))
-
-
 try:
-    with open("fsm.json", "r", encoding="utf-8") as f:
+    with open("/mnt/data/fsm.json", "r", encoding="utf-8") as f:
         fsm = json.load(f)
 except (FileNotFoundError, json.decoder.JSONDecodeError):
     fsm = {}
@@ -50,8 +47,8 @@ async def set_state(
     else:
         fsm[str(user)] = data
 
-    async with aopen("fsm.json", "w", encoding="utf-8") as f:
-        json.dump({key: value for key, value in fsm.items() if value}, f)
+    async with aopen("/mnt/data/fsm.json", "w", encoding="utf-8") as f:
+        await f.write(json.dumps({key: value for key, value in fsm.items() if value}))
 
 
 gs = get_state

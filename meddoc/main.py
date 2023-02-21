@@ -2,6 +2,7 @@
 
 import asyncio
 import logging
+import os
 
 from aiogram import Bot, Dispatcher, types
 
@@ -9,11 +10,11 @@ from . import log
 
 log.init()
 
-from . import config, handlers
+from . import handlers
 from .notifier import Notifier
 
 bot = Bot(
-    token=config.BOT_TOKEN,
+    token=os.environ["BOT_TOKEN"],
     parse_mode=types.ParseMode.HTML,
     disable_web_page_preview=True,
 )

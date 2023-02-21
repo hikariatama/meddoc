@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 
 class Notifier:
     def __init__(self):
-        self._db_path: str = os.path.join(os.path.dirname(__file__), "notifier.json")
+        self._db_path: str = "/mnt/data/notifier.json"
         self._db: dict = {}
         self._queue: list = []
         self._bot: "Bot" = None  # type: ignore # noqa: F821
@@ -100,9 +100,7 @@ class Notifier:
     async def poll(self, force_send: int = False):
         while True:
             try:
-                wb = load_workbook(
-                    os.path.join(os.path.dirname(__file__), "docx", "database.xlsx")
-                )
+                wb = load_workbook("/mnt/data/database.xlsx")
                 ws = wb.active
                 for row in ws.iter_rows(min_row=2):
                     if row[0].value is None:

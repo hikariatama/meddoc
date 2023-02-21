@@ -23,10 +23,7 @@ def init(dp: Dispatcher):
         await message.document.download(data)
         data.seek(0)
 
-        with open(
-            os.path.join(os.path.dirname(__file__), "..", "docx", "database.xlsx"),
-            "wb",
-        ) as f:
+        with open("/mnt/data/database.xlsx", "wb") as f:
             f.write(data.read())
 
         await message.delete()

@@ -29,83 +29,101 @@ def init(dp: Dispatcher):
             notifier.set_bot(dp.bot)
             await notifier.poll(force_send=message.from_user.id)
             return
-
-        await dp.bot.send_chat_action(message.chat.id, "typing")
-
-        if force_user:
-            user = docx.find_user(md5=force_user)[0]
+        
+        if not override_text:
+            if "," in message.text:
+                users = list(map(lambda x: x.strip(), message.text.split(",")))
+                await message.answer(
+                    f"👥 <b>Запрашиваю справки для {len(users)} лицеистов</b>"
+                )
+            else:
+                users = [message.text]
         else:
-            fullname = override_text or message.text
-            users = docx.find_user(fullname)
-            if len(users) > 1:
-                markup = types.InlineKeyboardMarkup()
-                for user in users:
-                    markup.row(
-                        types.InlineKeyboardButton(
-                            f"{user.real_name} • {user.grade}",
-                            callback_data="getdoc:{}".format(user.id),
+            users = [override_text]
+
+        for user in users:
+            await dp.bot.send_chat_action(message.chat.id, "typing")
+
+            if force_user:
+                user = docx.find_user(md5=force_user)[0]
+            else:
+                fullname = override_text or user
+                users = docx.find_user(fullname)
+                if len(users) > 1:
+                    markup = types.InlineKeyboardMarkup()
+                    for user in users:
+                        markup.row(
+                            types.InlineKeyboardButton(
+                                f"{user.real_name} • {user.grade}",
+                                callback_data="getdoc:{}".format(user.id),
+                            )
                         )
+                    await message.answer(
+                        "📝 <b>Выберите лицеиста для которого нужно сгенерировать "
+                        "документы:</b>",
+                        reply_markup=markup,
                     )
-                await message.answer(
-                    "📝 <b>Выберите лицеиста для которого нужно сгенерировать "
-                    "документы:</b>",
-                    reply_markup=markup,
+                    continue
+
+                if not users:
+                    await message.answer(
+                        "❌ <b>Не удалось найти лицеиста с такой фамилией! Попробуйте"
+                        " еще раз:</b>"
+                    )
+                    continue
+
+                user = users[0]
+
+            docs = []
+
+            await dp.bot.send_chat_action(message.chat.id, "upload_document")
+
+            name = user.real_name
+
+            try:
+                bytes_ = await utils.run_sync(lambda: docx.generate_079_u(user))
+                assert bytes_
+                doc = io.BytesIO(bytes_)
+                doc.name = f"079-У {name}.docx".replace(" ", "_")
+                docs.append(doc)
+            except Exception:
+                logger.exception("Failed to generate 079-У")
+
+            try:
+                bytes_ = await utils.run_sync(
+                    lambda: docx.generate_medical_certificate(user)
                 )
-                return
+                assert bytes_
+                doc = io.BytesIO(bytes_)
+                doc.name = f"О состоянии здоровья {name}.docx".replace(" ", "_")
+                docs.append(doc)
+            except Exception:
+                logger.exception("Failed to generate medical certificate")
 
-            if not users:
-                await message.answer(
-                    "❌ <b>Не удалось найти лицеиста с такой фамилией! Попробуйте еще"
-                    " раз:</b>"
+            try:
+                bytes_ = await utils.run_sync(
+                    lambda: docx.generate_medical_verification(user)
                 )
-                return
+                assert bytes_
+                doc = io.BytesIO(bytes_)
+                doc.name = f"Об отсутствии инфекций {name}.docx".replace(" ", "_")
+                docs.append(doc)
+            except Exception:
+                logger.exception("Failed to generate medical verification")
 
-            user = users[0]
+            if not docs:
+                await message.answer(
+                    "❌ <b>Не удалось сгенерировать ни одного документа!</b>"
+                )
+                continue
 
-        docs = []
+            media_group = types.MediaGroup()
+            for doc in docs[:-1]:
+                media_group.attach_document(doc)
 
-        await dp.bot.send_chat_action(message.chat.id, "upload_document")
-
-        name = user.real_name
-
-        try:
-            bytes_ = await utils.run_sync(lambda: docx.generate_079_u(user))
-            assert bytes_
-            doc = io.BytesIO(bytes_)
-            doc.name = f"079-У {name}.docx".replace(" ", "_")
-            docs.append(doc)
-        except Exception:
-            logger.exception("Failed to generate 079-У")
-
-        try:
-            bytes_ = await utils.run_sync(
-                lambda: docx.generate_medical_certificate(user)
+            media_group.attach_document(
+                docs[-1],
+                caption=f"🧑‍⚕️ <b>{name}, {user.grade} класс</b>",
             )
-            assert bytes_
-            doc = io.BytesIO(bytes_)
-            doc.name = f"О состоянии здоровья {name}.docx".replace(" ", "_")
-            docs.append(doc)
-        except Exception:
-            logger.exception("Failed to generate medical certificate")
 
-        try:
-            bytes_ = await utils.run_sync(
-                lambda: docx.generate_medical_verification(user)
-            )
-            assert bytes_
-            doc = io.BytesIO(bytes_)
-            doc.name = f"Об отсутствии инфекций {name}.docx".replace(" ", "_")
-            docs.append(doc)
-        except Exception:
-            logger.exception("Failed to generate medical verification")
-
-        media_group = types.MediaGroup()
-        for doc in docs[:-1]:
-            media_group.attach_document(doc)
-
-        media_group.attach_document(
-            docs[-1],
-            caption=f"🧑‍⚕️ <b>{name}, {user.grade} класс</b>",
-        )
-
-        await message.answer_media_group(media_group)
+            await message.answer_media_group(media_group)
